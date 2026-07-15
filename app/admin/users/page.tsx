@@ -261,7 +261,7 @@ export default function AdminUsersPage() {
                   required
                   value={newStaffData.fullName}
                   onChange={(e) => setNewStaffData({ ...newStaffData, fullName: e.target.value })}
-                  className="w-full h-10 px-3 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] text-sm focus:outline-none focus:border-[#2563EB]"
+                  className="w-full h-10 px-3 rounded-xl border border-[#D1D5DB] bg-white text-sm text-[#111827] font-semibold focus:outline-none focus:border-[#2563EB] placeholder:text-[#9CA3AF]"
                   placeholder="e.g. Rahul Kumar"
                 />
               </div>
@@ -273,7 +273,7 @@ export default function AdminUsersPage() {
                   required
                   value={newStaffData.email}
                   onChange={(e) => setNewStaffData({ ...newStaffData, email: e.target.value })}
-                  className="w-full h-10 px-3 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] text-sm focus:outline-none focus:border-[#2563EB]"
+                  className="w-full h-10 px-3 rounded-xl border border-[#D1D5DB] bg-white text-sm text-[#111827] font-semibold focus:outline-none focus:border-[#2563EB] placeholder:text-[#9CA3AF]"
                   placeholder="name@livecalicut.in"
                 />
               </div>
@@ -283,7 +283,7 @@ export default function AdminUsersPage() {
                 <select
                   value={newStaffData.roleName}
                   onChange={(e) => setNewStaffData({ ...newStaffData, roleName: e.target.value })}
-                  className="w-full h-10 px-3 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] text-sm focus:outline-none focus:border-[#2563EB]"
+                  className="w-full h-10 px-3 rounded-xl border border-[#D1D5DB] bg-white text-sm text-[#111827] font-semibold focus:outline-none focus:border-[#2563EB]"
                 >
                   <option value="Moderator">Moderator</option>
                   <option value="Marketing Executive">Marketing Executive</option>

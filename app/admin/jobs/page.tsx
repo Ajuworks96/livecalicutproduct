@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { fetchAdminJobsAction } from './actions';
@@ -66,9 +67,11 @@ export default function AdminJobsPage() {
               <p className="text-sm text-[#6B7280]">Approve tech vacancies, verify Cyberpark corporate listings, and manage walk-in drives</p>
             </div>
 
-            <button className="h-[40px] px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0">
-              <Plus className="w-4 h-4" /> Post New Job Opening
-            </button>
+            <Link href="/merchant/jobs/create">
+              <button className="h-[40px] px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0">
+                <Plus className="w-4 h-4" /> Post New Job Opening
+              </button>
+            </Link>
           </div>
 
           {/* Search Card */}

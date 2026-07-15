@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { fetchAdminPropertiesAction } from './actions';
@@ -65,9 +66,11 @@ export default function AdminPropertiesPage() {
               <p className="text-sm text-[#6B7280]">Verify land title plots, commercial office rentals, and residential villas across Kozhikode</p>
             </div>
 
-            <button className="h-[40px] px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0">
-              <Plus className="w-4 h-4" /> Add Property Listing
-            </button>
+            <Link href="/properties/create">
+              <button className="h-[40px] px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0">
+                <Plus className="w-4 h-4" /> Add Property Listing
+              </button>
+            </Link>
           </div>
 
           {/* Search Card */}

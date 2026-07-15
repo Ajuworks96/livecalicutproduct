@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { fetchAdminMarketplaceAction } from './actions';
+import Link from 'next/link';
 import { Card } from '@/components/ui/card';
-import { ShoppingBag, Search, ShieldCheck, Tag, XCircle } from 'lucide-react';
+import { ShoppingBag, Search, ShieldCheck, Tag, XCircle, Plus } from 'lucide-react';
 
 export default function AdminMarketplacePage() {
   const [search, setSearch] = useState('');
@@ -64,6 +65,12 @@ export default function AdminMarketplacePage() {
               </h1>
               <p className="text-sm text-[#6B7280]">Review citizen listings, moderate reported pre-owned items, and verify prices</p>
             </div>
+
+            <Link href="/marketplace/create">
+              <button className="h-[40px] px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0">
+                <Plus className="w-4 h-4" /> Add Classified Item
+              </button>
+            </Link>
           </div>
 
           {/* Search Card */}

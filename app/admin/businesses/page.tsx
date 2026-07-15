@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { fetchAdminBusinessesAction } from './actions';
@@ -83,9 +84,11 @@ export default function AdminBusinessesPage() {
               <p className="text-sm text-[#6B7280]">Verify physical ward locations, approve merchant claims, and manage featured store listings</p>
             </div>
 
-            <button className="h-[40px] px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0">
-              <Plus className="w-4 h-4" /> Add Verified Outlet
-            </button>
+            <Link href="/business/create">
+              <button className="h-[40px] px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0">
+                <Plus className="w-4 h-4" /> Add Verified Outlet
+              </button>
+            </Link>
           </div>
 
           {/* Search & Status Filter */}
