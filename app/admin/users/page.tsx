@@ -200,6 +200,7 @@ export default function AdminUsersPage() {
                           <option value="User">User</option>
                           <option value="Merchant">Merchant</option>
                           <option value="Moderator">Moderator</option>
+                          <option value="Marketing Executive">Marketing Executive</option>
                           <option value="City Admin">City Admin</option>
                           <option value="Super Admin">Super Admin</option>
                         </select>

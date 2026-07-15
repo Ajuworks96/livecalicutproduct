@@ -4,6 +4,8 @@ import { AdminService } from '@/lib/services/admin.service';
 import { adminUserActionSchema } from '@/lib/validations/admin';
 import { requireRole } from '@/lib/supabase/require-auth';
 
+import { createAdminClient } from '@/lib/supabase/server';
+
 const ADMIN_ROLES = ['City Admin', 'Super Admin'];
 
 export async function GET(request: Request) {
@@ -14,7 +16,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || undefined;
 
-    const users = await AdminService.getUsers(auth.supabase, { search });
+    const supabaseAdmin = await createAdminClient();
+    const users = await AdminService.getUsers(supabaseAdmin, { search });
+    
     return ApiResponse.success(users, 'User records fetched successfully');
   } catch (err: any) {
     return ApiResponse.error('FETCH_ERROR', err.message, [], 500);
