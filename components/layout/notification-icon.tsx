@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Bell } from 'lucide-react';
 
 export const NotificationIcon: React.FC = () => {
-  const [unreadCount] = useState(2);
+  const [unreadCount] = useState(0); // Real notifications coming soon
 
   return (
     <button

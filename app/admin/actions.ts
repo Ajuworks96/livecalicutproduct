@@ -36,7 +36,7 @@ export async function wipeDummyDataAction() {
   await supabase.from('jobs').delete().is('created_by', null);
   await supabase.from('properties').delete().is('created_by', null);
   await supabase.from('marketplace_items').delete().is('created_by', null);
-  await supabase.from('news_articles').delete().is('created_by', null);
+  await supabase.from('news').delete().is('created_by', null);
   await supabase.from('events').delete().is('created_by', null);
   
   return { success: true };
