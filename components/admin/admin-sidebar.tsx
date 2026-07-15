@@ -74,6 +74,7 @@ export const AdminSidebar: React.FC = () => {
         { label: 'Tourism & Places', href: '/admin/tourism', icon: Compass, allowedRoles: ['Super Admin', 'City Admin', 'Marketing Executive', 'Moderator'] },
         { label: 'Categories Taxonomy', href: '/admin/categories', icon: FolderTree, allowedRoles: ['Super Admin', 'City Admin'] },
         { label: 'Cities & Wards', href: '/admin/cities', icon: MapPin, allowedRoles: ['Super Admin', 'City Admin'] },
+        { label: 'Local Areas', href: '/admin/locations', icon: MapPin, allowedRoles: ['Super Admin', 'City Admin'] },
       ],
     },
     {

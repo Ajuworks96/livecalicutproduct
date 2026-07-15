@@ -22,6 +22,20 @@ export const UniversalSearch: React.FC<UniversalSearchProps> = ({
 }) => {
   const [query, setQuery] = useState(defaultValue);
   const [location, setLocation] = useState('All Locations');
+  const [locationsList, setLocationsList] = useState<string[]>(['All Locations']);
+
+  React.useEffect(() => {
+    fetch('/api/locations')
+      .then(res => res.json())
+      .then(json => {
+        if (json.data && json.data.length > 0) {
+          setLocationsList(['All Locations', ...json.data.map((a: any) => a.name)]);
+        } else {
+          setLocationsList([...CALICUT_LOCATIONS]);
+        }
+      })
+      .catch(() => setLocationsList([...CALICUT_LOCATIONS]));
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +55,7 @@ export const UniversalSearch: React.FC<UniversalSearchProps> = ({
           onChange={(e) => setLocation(e.target.value)}
           className="border-none bg-transparent h-full py-0 px-0 text-[13px] font-bold shadow-none focus:ring-0 focus:outline-none"
         >
-          {CALICUT_LOCATIONS.map((loc) => (
+          {locationsList.map((loc) => (
             <option key={loc} value={loc} className="bg-white text-[#111827]">
               {loc}
             </option>

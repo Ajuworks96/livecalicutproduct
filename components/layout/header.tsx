@@ -9,12 +9,26 @@ import { Button } from '@/components/ui/button';
 import { ProfileMenu } from './profile-menu';
 import { NotificationIcon } from './notification-icon';
 import { LiveCalicutLogo } from '@/components/shared/live-calicut-logo';
-import { CALICUT_LOCATIONS } from '@/config/constants';
+import { CALICUT_LOCATIONS } from '@/config/constants'; // Fallback if API fails
 
 export const Header: React.FC = () => {
   const pathname = usePathname();
   const [selectedLocation, setSelectedLocation] = React.useState('All Locations');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [locations, setLocations] = React.useState<string[]>(['All Locations']);
+
+  React.useEffect(() => {
+    fetch('/api/locations')
+      .then(res => res.json())
+      .then(json => {
+        if (json.data && json.data.length > 0) {
+          setLocations(['All Locations', ...json.data.map((a: any) => a.name)]);
+        } else {
+          setLocations([...CALICUT_LOCATIONS]);
+        }
+      })
+      .catch(() => setLocations([...CALICUT_LOCATIONS]));
+  }, []);
 
   const navLinks = [
     { href: '/', label: 'Home', icon: Home },
@@ -40,7 +54,7 @@ export const Header: React.FC = () => {
               onChange={(e) => setSelectedLocation(e.target.value)}
               className="border-none bg-transparent h-7 py-0 px-0 text-xs font-semibold shadow-none focus:ring-0 focus:outline-none"
             >
-              {CALICUT_LOCATIONS.map((loc) => (
+              {locations.map((loc) => (
                 <option key={loc} value={loc} className="bg-white text-[#111827]">
                   {loc}
                 </option>
