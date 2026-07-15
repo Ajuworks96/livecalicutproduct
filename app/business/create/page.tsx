@@ -32,7 +32,8 @@ import {
 export default function CreateBusinessPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user, profile } = useAuthStore();
+  const { user, profile, roleName } = useAuthStore();
+  const isStaffOrAdmin = ['Super Admin', 'City Admin', 'Marketing Executive', 'Moderator'].includes(roleName);
 
   const businessTypes = [
     'Restaurant', 'Cafe', 'Hotel', 'Hospital', 'Clinic', 'Pharmacy',
@@ -58,6 +59,7 @@ export default function CreateBusinessPage() {
   const [description, setDescription] = useState('');
   const [gstNumber, setGstNumber] = useState('');
   const [coverImage, setCoverImage] = useState('');
+  const [ownerEmail, setOwnerEmail] = useState('');
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(['Parking', 'WiFi', 'Card Payment']);
   const [openingHours, setOpeningHours] = useState('08:00 AM - 10:00 PM (Mon - Sun)');
 
@@ -113,6 +115,7 @@ export default function CreateBusinessPage() {
         location: `${area}, ${location}`,
         description,
         cover_image: coverImage || undefined,
+        ownerEmail: ownerEmail || undefined,
       });
 
       queryClient.invalidateQueries({ queryKey: ['businesses'] });
@@ -210,6 +213,29 @@ export default function CreateBusinessPage() {
                 module="businesses"
                 label="Storefront Cover Image"
               />
+
+              {isStaffOrAdmin && (
+                <div className="p-4 border border-blue-100 bg-blue-50/50 rounded-2xl space-y-2">
+                  <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider">
+                    Staff-Only: Assign Business Owner
+                  </h4>
+                  <div>
+                    <label className="block text-[11px] font-bold text-blue-700 uppercase tracking-wider mb-1">
+                      Owner's Email Address (Optional)
+                    </label>
+                    <Input
+                      type="email"
+                      value={ownerEmail}
+                      onChange={(e) => setOwnerEmail(e.target.value)}
+                      placeholder="owner@business.com"
+                      className="h-[44px] rounded-xl border-blue-200 bg-white text-[#111827] font-semibold focus:border-blue-500 focus:ring-0"
+                    />
+                    <p className="text-[10px] text-blue-600 mt-1">
+                      If the owner has an account, this links the business to them. If not, they will receive an email invitation to set up their password and access their Merchant Dashboard.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
 

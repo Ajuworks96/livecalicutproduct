@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { createBusinessSchema } from '@/lib/validations/business';
 
 export async function GET(request: Request) {
@@ -35,18 +35,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Unauthorized authentication required' }, { status: 401 });
     }
 
-    // Get user role to determine owner_id vs created_by
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
-
-    const role = profile?.role || 'user';
-    const isStaffOrAdmin = ['super_admin', 'marketing_executive'].includes(role);
+    // Get user roles from user_roles matrix
+    const { data: userRoles } = await supabase
+      .from('user_roles')
+      .select('roles(name)')
+      .eq('user_id', session.user.id);
+    const roleNames = userRoles?.map((ur: any) => ur.roles?.name).filter(Boolean) || [];
+    const isStaffOrAdmin = ['Super Admin', 'City Admin', 'Marketing Executive', 'Moderator'].some(r => roleNames.includes(r));
 
     const body = await request.json();
-    const { name, category, phone, location, description, cover_image } = body;
+    const { name, category, phone, location, description, cover_image, ownerEmail } = body;
 
     if (!name || !category || !phone || !location) {
       return NextResponse.json({ success: false, message: 'Missing required fields' }, { status: 400 });
@@ -77,11 +75,76 @@ export async function POST(request: Request) {
       categoryId = newCat!.id;
     }
 
+    // Resolve ownerId based on staff status and optional ownerEmail
+    let ownerId = null;
+    if (isStaffOrAdmin) {
+      if (ownerEmail) {
+        const trimmedEmail = ownerEmail.trim().toLowerCase();
+        const supabaseAdmin = await createAdminClient();
+
+        // 1. Check if profile with email exists
+        const { data: existingProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('email', trimmedEmail)
+          .maybeSingle();
+
+        if (existingProfile) {
+          ownerId = existingProfile.id;
+
+          // Check if they already have Merchant role
+          const { data: existingRoles } = await supabaseAdmin
+            .from('user_roles')
+            .select('roles(name)')
+            .eq('user_id', ownerId);
+
+          const currentRoles = existingRoles?.map((ur: any) => ur.roles?.name).filter(Boolean) || [];
+          if (!currentRoles.includes('Merchant')) {
+            const { data: merchantRole } = await supabaseAdmin
+              .from('roles')
+              .select('id')
+              .eq('name', 'Merchant')
+              .single();
+
+            if (merchantRole) {
+              await supabaseAdmin
+                .from('user_roles')
+                .insert({ user_id: ownerId, role_id: merchantRole.id });
+            }
+          }
+        } else {
+          // 2. User does not exist, send Supabase invitation
+          const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(trimmedEmail);
+          
+          if (inviteError) {
+            throw inviteError;
+          }
+
+          ownerId = inviteData.user.id;
+
+          // Assign Merchant role
+          const { data: merchantRole } = await supabaseAdmin
+            .from('roles')
+            .select('id')
+            .eq('name', 'Merchant')
+            .single();
+
+          if (merchantRole) {
+            await supabaseAdmin
+              .from('user_roles')
+              .insert({ user_id: ownerId, role_id: merchantRole.id });
+          }
+        }
+      }
+    } else {
+      ownerId = session.user.id;
+    }
+
     // Insert Business
     const { data, error } = await supabase
       .from('businesses')
       .insert({
-        owner_id: isStaffOrAdmin ? null : session.user.id,
+        owner_id: ownerId,
         created_by: session.user.id, // For tracking who created it (e.g. marketing staff)
         category_id: categoryId,
         city_id: cityId,
