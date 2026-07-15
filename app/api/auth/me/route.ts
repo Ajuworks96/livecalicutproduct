@@ -50,8 +50,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Format response
-    const rawRoles = profile?.user_roles?.[0]?.roles;
-    const roleName = (Array.isArray(rawRoles) ? rawRoles[0]?.name : rawRoles?.name) || 'User';
+    // Extract all role names from the user_roles array safely
+    const roleNames = profile?.user_roles?.map((ur: any) => ur?.roles?.name).filter(Boolean) || ['User'];
+    const roleName = roleNames.includes('Super Admin') ? 'Super Admin' 
+      : roleNames.includes('City Admin') ? 'City Admin' 
+      : roleNames.includes('Moderator') ? 'Moderator' 
+      : roleNames.includes('Marketing Executive') ? 'Marketing Executive'
+      : roleNames.includes('Merchant') ? 'Merchant'
+      : 'User';
 
     return NextResponse.json({
       user,
