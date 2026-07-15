@@ -34,7 +34,7 @@ export class AdminService {
   ) {
     let query = supabase
       .from('profiles')
-      .select('*, roles!role_id(name)')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (filters.search) {
@@ -43,9 +43,32 @@ export class AdminService {
       );
     }
 
-    const { data, error } = await query;
-    if (error) throw error;
-    return data ?? [];
+    const { data: profiles, error: profilesError } = await query;
+    if (profilesError) throw profilesError;
+    if (!profiles || profiles.length === 0) return [];
+
+    // Fetch roles in a separate query to avoid schema relationship errors
+    const profileIds = profiles.map(p => p.id);
+    const { data: userRoles } = await supabase
+      .from('user_roles')
+      .select('user_id, roles(name)')
+      .in('user_id', profileIds);
+
+    const rolesMap = new Map();
+    if (userRoles) {
+      userRoles.forEach(ur => {
+        const rawRoles = ur.roles as any;
+        const roleName = Array.isArray(rawRoles) ? rawRoles[0]?.name : rawRoles?.name;
+        rolesMap.set(ur.user_id, roleName || 'User');
+      });
+    }
+
+    const merged = profiles.map(p => ({
+      ...p,
+      role: rolesMap.get(p.id) || 'User'
+    }));
+
+    return merged;
   }
 
   static async updateUserStatus(
