@@ -79,23 +79,23 @@ export async function proxy(request: NextRequest) {
       }
     );
 
-    const { data: userRole, error: roleError } = await supabaseAdmin
+    const { data: userRoles, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('roles(name)')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
 
-    if (roleError && roleError.code !== 'PGRST116') {
+    if (roleError) {
       console.error('[proxy] Role fetch error:', roleError.message);
     }
 
-    // Safely extract role name — default to 'User' if no role assigned
-    const rawRoles = userRole?.roles as any;
-    const roleName = (Array.isArray(rawRoles) ? rawRoles[0]?.name : rawRoles?.name) ?? 'User';
+    // Safely extract all role names — default to ['User'] if no roles assigned
+    const roleNames = userRoles && userRoles.length > 0 
+      ? userRoles.map(ur => (ur.roles as any)?.name).filter(Boolean)
+      : ['User'];
 
     // Merchant routes: Merchant, City Admin, Super Admin
     if (MERCHANT_ROUTES.some((r) => pathname.startsWith(r))) {
-      const allowed = ['Merchant', 'City Admin', 'Super Admin'].includes(roleName);
+      const allowed = ['Merchant', 'City Admin', 'Super Admin'].some(r => roleNames.includes(r));
       if (!allowed) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
@@ -103,7 +103,7 @@ export async function proxy(request: NextRequest) {
 
     // Admin routes: Moderator, City Admin, Super Admin, Marketing Executive
     if (ADMIN_ROUTES.some((r) => pathname.startsWith(r))) {
-      const allowed = ['Moderator', 'City Admin', 'Super Admin', 'Marketing Executive'].includes(roleName);
+      const allowed = ['Moderator', 'City Admin', 'Super Admin', 'Marketing Executive'].some(r => roleNames.includes(r));
       if (!allowed) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
