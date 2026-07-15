@@ -50,9 +50,14 @@ export const ProfileMenu: React.FC = () => {
     );
   }
 
-  // Extract role name safely from the user_roles linking table
-  const rawRoles = profile?.user_roles?.[0]?.roles;
-  const roleName = (Array.isArray(rawRoles) ? rawRoles[0]?.name : rawRoles?.name) || 'User';
+  // Extract all role names from the user_roles array safely
+  const roleNames = profile?.user_roles?.map((ur: any) => ur?.roles?.name).filter(Boolean) || ['User'];
+  const highestRole = roleNames.includes('Super Admin') ? 'Super Admin' 
+    : roleNames.includes('City Admin') ? 'City Admin' 
+    : roleNames.includes('Moderator') ? 'Moderator' 
+    : roleNames.includes('Marketing Executive') ? 'Marketing Executive'
+    : roleNames.includes('Merchant') ? 'Merchant'
+    : 'User';
 
   return (
     <div className="relative">
@@ -78,7 +83,7 @@ export const ProfileMenu: React.FC = () => {
               {profile?.full_name || user.email}
             </p>
             <div className="mt-1">
-              <RoleBadge roleName={roleName} />
+              <RoleBadge roleName={highestRole} />
             </div>
           </div>
 
@@ -91,7 +96,7 @@ export const ProfileMenu: React.FC = () => {
             My Account Profile
           </Link>
 
-          {(roleName === 'Super Admin' || roleName === 'City Admin' || roleName === 'Moderator') && (
+          {(roleNames.includes('Super Admin') || roleNames.includes('City Admin') || roleNames.includes('Moderator') || roleNames.includes('Marketing Executive')) && (
             <Link
               href="/admin"
               onClick={() => setIsOpen(false)}
@@ -99,6 +104,17 @@ export const ProfileMenu: React.FC = () => {
             >
               <ShieldCheck className="w-4 h-4" />
               Admin Console
+            </Link>
+          )}
+
+          {(roleNames.includes('Merchant') && !roleNames.includes('Super Admin')) && (
+            <Link
+              href="/merchant"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-xl transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Merchant Dashboard
             </Link>
           )}
 
