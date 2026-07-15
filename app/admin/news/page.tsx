@@ -1,25 +1,52 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { fetchAdminNewsAction } from './actions';
 import { Card } from '@/components/ui/card';
-import { Newspaper, Plus, Search, Trash2, Edit3, Newspaper as NewsIcon } from 'lucide-react';
+import { Newspaper, Plus, Search, Trash2, Edit3, Newspaper as NewsIcon, XCircle } from 'lucide-react';
 
 export default function AdminNewsPage() {
   const [search, setSearch] = useState('');
 
-  const [newsArticles, setNewsArticles] = useState([
-    { id: '1', title: 'Calicut Beach Waterfront Renovation Project Approved by Municipal Corporation', category: 'Civic Infrastructure', author: 'LiveCalicut Editorial', publishedAt: 'Today, 09:30 AM', status: 'published' },
-    { id: '2', title: 'Cyberpark Phase 2 Hiring Drive: 500+ Tech Vacancies Open', category: 'IT & Economy', author: 'Cyberpark Desk', publishedAt: 'Yesterday', status: 'published' },
-    { id: '3', title: 'Heritage SM Street Merchant Cultural Fest Scheduled for Next Weekend', category: 'Culture & Tourism', author: 'Civic Editor', publishedAt: 'Draft', status: 'draft' },
-  ]);
+  const [newsArticles, setNewsArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const archiveArticle = (id: string) => {
-    setNewsArticles(newsArticles.filter((n) => n.id !== id));
+  useEffect(() => {
+    loadNews();
+  }, []);
+
+  const loadNews = async () => {
+    setLoading(true);
+    const res = await fetchAdminNewsAction();
+    if (res.success) {
+      setNewsArticles(res.data || []);
+    }
+    setLoading(false);
   };
 
-  const filteredNews = newsArticles.filter((n) => n.title.toLowerCase().includes(search.toLowerCase()));
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    const action = currentStatus === 'published' ? 'reject' : 'approve';
+    const res = await fetch('/api/v1/admin/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'news', entityId: id, action })
+    });
+    if (res.ok) loadNews();
+  };
+
+  const deleteNews = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this news article?')) return;
+    const res = await fetch('/api/v1/admin/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'news', entityId: id, hardDelete: true })
+    });
+    if (res.ok) loadNews();
+  };
+
+  const filteredNews = newsArticles.filter((n) => n.title?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] text-[#111827]">
@@ -72,29 +99,45 @@ export default function AdminNewsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB] text-xs">
-                  {filteredNews.map((n) => (
+                  {loading ? (
+                    <tr><td colSpan={5} className="text-center py-8">Loading news...</td></tr>
+                  ) : filteredNews.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-8">No articles found</td></tr>
+                  ) : filteredNews.map((n) => (
                     <tr key={n.id} className="hover:bg-[#F8FAFC] transition-colors">
                       <td className="py-4 px-6 font-semibold">
                         <p className="font-bold text-[#111827] font-sans">{n.title}</p>
-                        <p className="text-[11px] text-[#6B7280]">{n.category}</p>
+                        <p className="text-[11px] text-[#6B7280]">{n.news_categories?.name || 'Uncategorized'}</p>
                       </td>
-                      <td className="py-4 px-4 text-[#4B5563] font-medium">{n.author}</td>
-                      <td className="py-4 px-4 text-[#6B7280] font-medium">{n.publishedAt}</td>
+                      <td className="py-4 px-4 text-[#4B5563] font-medium">{n.profiles?.full_name || n.author || 'System'}</td>
+                      <td className="py-4 px-4 text-[#6B7280] font-medium">
+                        {new Date(n.published_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                      </td>
                       <td className="py-4 px-4">
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase ${
                             n.status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
                           }`}
                         >
-                          {n.status === 'published' ? 'Live Story' : 'Draft'}
+                          {n.status}
                         </span>
                       </td>
                       <td className="py-4 px-6 text-right space-x-2">
                         <button
-                          onClick={() => archiveArticle(n.id)}
-                          className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100 text-xs font-bold transition-all inline-flex items-center gap-1"
+                          onClick={() => toggleStatus(n.id, n.status)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                            n.status === 'published'
+                              ? 'border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100'
+                              : 'border-emerald-200 text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
+                          }`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" /> Archive Story
+                          {n.status === 'published' ? 'Archive Story' : 'Publish Story'}
+                        </button>
+                        <button
+                          onClick={() => deleteNews(n.id)}
+                          className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all inline-flex items-center gap-1"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> Delete
                         </button>
                       </td>
                     </tr>

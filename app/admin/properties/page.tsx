@@ -1,25 +1,52 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { fetchAdminPropertiesAction } from './actions';
 import { Card } from '@/components/ui/card';
-import { Building, Search, Plus, CheckCircle2, Home } from 'lucide-react';
+import { Building, Search, Plus, MapPin, XCircle, Home } from 'lucide-react';
 
 export default function AdminPropertiesPage() {
   const [search, setSearch] = useState('');
 
-  const [properties, setProperties] = useState([
-    { id: '1', title: 'Sea View 3BHK Penthouse Villa', location: 'Kozhikode Beach Front', price: '₹1.85 Cr', agent: 'Malabar Realty', status: 'verified' },
-    { id: '2', title: 'Commercial Office Space 2400 sq.ft', location: 'Mavoor Road Junction', price: '₹95,000 / mo', agent: 'City Estates', status: 'verified' },
-    { id: '3', title: '12 Cents Residential Land Plot', location: 'Chevayur, Calicut', price: '₹68 Lakhs', agent: 'Direct Owner', status: 'pending' },
-  ]);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleStatus = (id: string) => {
-    setProperties(properties.map((p) => (p.id === id ? { ...p, status: p.status === 'verified' ? 'pending' : 'verified' } : p)));
+  useEffect(() => {
+    loadProperties();
+  }, []);
+
+  const loadProperties = async () => {
+    setLoading(true);
+    const res = await fetchAdminPropertiesAction();
+    if (res.success) {
+      setProperties(res.data || []);
+    }
+    setLoading(false);
   };
 
-  const filteredProperties = properties.filter((p) => p.title.toLowerCase().includes(search.toLowerCase()) || p.location.toLowerCase().includes(search.toLowerCase()));
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    const action = currentStatus === 'published' ? 'reject' : 'approve';
+    const res = await fetch('/api/v1/admin/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'property', entityId: id, action })
+    });
+    if (res.ok) loadProperties();
+  };
+
+  const deleteProperty = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this property?')) return;
+    const res = await fetch('/api/v1/admin/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'property', entityId: id, hardDelete: true })
+    });
+    if (res.ok) loadProperties();
+  };
+
+  const filteredProperties = properties.filter((p) => p.title?.toLowerCase().includes(search.toLowerCase()) || p.areas?.name?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] text-[#111827]">
@@ -72,35 +99,45 @@ export default function AdminPropertiesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB] text-xs">
-                  {filteredProperties.map((p) => (
+                  {loading ? (
+                    <tr><td colSpan={5} className="text-center py-8">Loading properties...</td></tr>
+                  ) : filteredProperties.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-8">No properties found</td></tr>
+                  ) : filteredProperties.map((p) => (
                     <tr key={p.id} className="hover:bg-[#F8FAFC] transition-colors">
                       <td className="py-4 px-6 font-semibold">
                         <p className="font-bold text-[#111827] font-sans">{p.title}</p>
                         <p className="text-[11px] text-[#6B7280] flex items-center gap-1">
-                          <Home className="w-3 h-3 text-[#2563EB]" /> {p.location}
+                          <Home className="w-3 h-3 text-[#2563EB]" /> {p.areas?.name || 'Unspecified Location'}
                         </p>
                       </td>
-                      <td className="py-4 px-4 font-black text-[#111827]">{p.price}</td>
-                      <td className="py-4 px-4 text-[#4B5563] font-medium">{p.agent}</td>
+                      <td className="py-4 px-4 font-black text-[#111827]">₹{Number(p.price).toLocaleString('en-IN')}</td>
+                      <td className="py-4 px-4 text-[#4B5563] font-medium">{p.profiles?.full_name || 'Anonymous User'}</td>
                       <td className="py-4 px-4">
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                            p.status === 'verified' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase ${
+                            p.status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
                           }`}
                         >
-                          {p.status === 'verified' ? 'Title Verified' : 'Pending Verification'}
+                          {p.status}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-right">
+                      <td className="py-4 px-6 text-right space-x-2">
                         <button
-                          onClick={() => toggleStatus(p.id)}
+                          onClick={() => toggleStatus(p.id, p.status)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                            p.status === 'verified'
+                            p.status === 'published'
                               ? 'border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100'
                               : 'border-emerald-200 text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
                           }`}
                         >
-                          {p.status === 'verified' ? 'Revoke Status' : 'Approve & Verify'}
+                          {p.status === 'published' ? 'Revoke Status' : 'Approve & Verify'}
+                        </button>
+                        <button
+                          onClick={() => deleteProperty(p.id)}
+                          className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all inline-flex items-center gap-1"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> Delete
                         </button>
                       </td>
                     </tr>

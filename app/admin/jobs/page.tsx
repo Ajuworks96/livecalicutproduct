@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { fetchAdminJobsAction } from './actions';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Briefcase, Plus, Search, CheckCircle2, XCircle, Building2, MapPin } from 'lucide-react';
@@ -10,17 +11,43 @@ import { Briefcase, Plus, Search, CheckCircle2, XCircle, Building2, MapPin } fro
 export default function AdminJobsPage() {
   const [search, setSearch] = useState('');
 
-  const [jobsList, setJobsList] = useState([
-    { id: '1', title: 'Senior React & Fullstack Engineer', company: 'Cyberpark Software Solutions', location: 'Cyberpark Phase 1', salary: '₹65k - ₹95k / mo', status: 'published', type: 'Full Time' },
-    { id: '2', title: 'Retail Operations Store Manager', company: 'Hilite Mall Outlets', location: 'Thondayad Bypass', salary: '₹28k - ₹38k / mo', status: 'published', type: 'Walk-In' },
-    { id: '3', title: 'Lead DevOps Cloud Specialist', company: 'TechPark Innovations', location: 'Cyberpark Phase 2', salary: '₹80k - ₹120k / mo', status: 'pending', type: 'Full Time' },
-  ]);
+  const [jobsList, setJobsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleJobStatus = (id: string) => {
-    setJobsList(jobsList.map((j) => (j.id === id ? { ...j, status: j.status === 'published' ? 'closed' : 'published' } : j)));
+  useEffect(() => {
+    loadJobs();
+  }, []);
+
+  const loadJobs = async () => {
+    setLoading(true);
+    const res = await fetchAdminJobsAction();
+    if (res.success) {
+      setJobsList(res.data || []);
+    }
+    setLoading(false);
   };
 
-  const filteredJobs = jobsList.filter((j) => j.title.toLowerCase().includes(search.toLowerCase()) || j.company.toLowerCase().includes(search.toLowerCase()));
+  const toggleJobStatus = async (id: string, currentStatus: string) => {
+    const action = currentStatus === 'published' ? 'reject' : 'approve';
+    const res = await fetch('/api/v1/admin/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'job', entityId: id, action })
+    });
+    if (res.ok) loadJobs();
+  };
+
+  const deleteJob = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this job posting?')) return;
+    const res = await fetch('/api/v1/admin/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'job', entityId: id, hardDelete: true })
+    });
+    if (res.ok) loadJobs();
+  };
+
+  const filteredJobs = jobsList.filter((j) => j.title?.toLowerCase().includes(search.toLowerCase()) || j.businesses?.name?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] text-[#111827]">
@@ -73,24 +100,28 @@ export default function AdminJobsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB] text-xs">
-                  {filteredJobs.map((j) => (
+                  {loading ? (
+                    <tr><td colSpan={5} className="text-center py-8">Loading jobs...</td></tr>
+                  ) : filteredJobs.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-8">No jobs found</td></tr>
+                  ) : filteredJobs.map((j) => (
                     <tr key={j.id} className="hover:bg-[#F8FAFC] transition-colors">
                       <td className="py-4 px-6 font-semibold">
                         <p className="font-bold text-[#111827] font-sans">{j.title}</p>
                         <p className="text-[11px] text-[#6B7280] flex items-center gap-1">
-                          <Building2 className="w-3 h-3 text-[#2563EB]" /> {j.company}
+                          <Building2 className="w-3 h-3 text-[#2563EB]" /> {j.businesses?.name || 'Unknown Company'}
                         </p>
                       </td>
-                      <td className="py-4 px-4 text-[#4B5563] font-medium">{j.location}</td>
+                      <td className="py-4 px-4 text-[#4B5563] font-medium">{j.location || j.city_id}</td>
                       <td className="py-4 px-4 text-emerald-600 font-extrabold">{j.salary}</td>
                       <td className="py-4 px-4">
-                        <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2563EB] text-[11px] font-bold border border-blue-200">
-                          {j.type}
+                        <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2563EB] text-[11px] font-bold border border-blue-200 uppercase">
+                          {j.employment_type?.replace('-', ' ')}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-right">
+                      <td className="py-4 px-6 text-right space-x-2">
                         <button
-                          onClick={() => toggleJobStatus(j.id)}
+                          onClick={() => toggleJobStatus(j.id, j.status)}
                           className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                             j.status === 'published'
                               ? 'border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100'
@@ -98,6 +129,12 @@ export default function AdminJobsPage() {
                           }`}
                         >
                           {j.status === 'published' ? 'Close Opening' : 'Publish Opening'}
+                        </button>
+                        <button
+                          onClick={() => deleteJob(j.id)}
+                          className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all inline-flex items-center gap-1"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> Delete
                         </button>
                       </td>
                     </tr>

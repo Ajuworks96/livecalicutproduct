@@ -1,25 +1,52 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { fetchAdminEventsAction } from './actions';
 import { Card } from '@/components/ui/card';
-import { Calendar, Plus, Search, MapPin, CheckCircle2, Clock } from 'lucide-react';
+import { Calendar, Plus, Search, MapPin, CheckCircle2, Clock, XCircle } from 'lucide-react';
 
 export default function AdminEventsPage() {
   const [search, setSearch] = useState('');
 
-  const [eventsList, setEventsList] = useState([
-    { id: '1', title: 'Malabar Literature & Cultural Fest 2026', venue: 'Calicut Beach Freedom Square', date: 'Jul 28 - Jul 30, 2026', organizer: 'Kozhikode Cultural Society', status: 'published' },
-    { id: '2', title: 'Cyberpark Tech Innovation Summit', venue: 'Cyberpark Convention Hall', date: 'Aug 05, 2026', organizer: 'Malabar IT Association', status: 'published' },
-    { id: '3', title: 'Beypore Water Fest & Boat Race', venue: 'Beypore Marina Harbour', date: 'Aug 14, 2026', organizer: 'Tourism Promotion Council', status: 'pending' },
-  ]);
+  const [eventsList, setEventsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleStatus = (id: string) => {
-    setEventsList(eventsList.map((e) => (e.id === id ? { ...e, status: e.status === 'published' ? 'pending' : 'published' } : e)));
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = async () => {
+    setLoading(true);
+    const res = await fetchAdminEventsAction();
+    if (res.success) {
+      setEventsList(res.data || []);
+    }
+    setLoading(false);
   };
 
-  const filteredEvents = eventsList.filter((e) => e.title.toLowerCase().includes(search.toLowerCase()) || e.venue.toLowerCase().includes(search.toLowerCase()));
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    const action = currentStatus === 'published' ? 'reject' : 'approve';
+    const res = await fetch('/api/v1/admin/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'event', entityId: id, action })
+    });
+    if (res.ok) loadEvents();
+  };
+
+  const deleteEvent = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this event?')) return;
+    const res = await fetch('/api/v1/admin/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'event', entityId: id, hardDelete: true })
+    });
+    if (res.ok) loadEvents();
+  };
+
+  const filteredEvents = eventsList.filter((e) => e.title?.toLowerCase().includes(search.toLowerCase()) || e.profiles?.full_name?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] text-[#111827]">
@@ -72,26 +99,32 @@ export default function AdminEventsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB] text-xs">
-                  {filteredEvents.map((e) => (
+                  {loading ? (
+                    <tr><td colSpan={5} className="text-center py-8">Loading events...</td></tr>
+                  ) : filteredEvents.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-8">No events found</td></tr>
+                  ) : filteredEvents.map((e) => (
                     <tr key={e.id} className="hover:bg-[#F8FAFC] transition-colors">
                       <td className="py-4 px-6 font-semibold">
                         <p className="font-bold text-[#111827] font-sans">{e.title}</p>
-                        <p className="text-[11px] text-[#6B7280]">{e.organizer}</p>
+                        <p className="text-[11px] text-[#6B7280]">{e.profiles?.full_name || 'System / Admin'}</p>
                       </td>
-                      <td className="py-4 px-4 text-[#4B5563] font-medium">{e.venue}</td>
-                      <td className="py-4 px-4 font-bold text-[#2563EB]">{e.date}</td>
+                      <td className="py-4 px-4 text-[#4B5563] font-medium">{e.areas?.name || 'Online / Pending'}</td>
+                      <td className="py-4 px-4 font-bold text-[#2563EB]">
+                        {new Date(e.start_date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </td>
                       <td className="py-4 px-4">
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase ${
                             e.status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
                           }`}
                         >
-                          {e.status === 'published' ? 'Live Published' : 'Pending Review'}
+                          {e.status}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-right">
+                      <td className="py-4 px-6 text-right space-x-2">
                         <button
-                          onClick={() => toggleStatus(e.id)}
+                          onClick={() => toggleStatus(e.id, e.status)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                             e.status === 'published'
                               ? 'border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100'
@@ -99,6 +132,12 @@ export default function AdminEventsPage() {
                           }`}
                         >
                           {e.status === 'published' ? 'Unpublish' : 'Approve & Publish'}
+                        </button>
+                        <button
+                          onClick={() => deleteEvent(e.id)}
+                          className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all inline-flex items-center gap-1"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> Delete
                         </button>
                       </td>
                     </tr>

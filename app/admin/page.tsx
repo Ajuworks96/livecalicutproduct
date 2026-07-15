@@ -1,35 +1,22 @@
 import React from 'react';
+import Link from 'next/link';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
-import { StatsCards } from '@/components/admin/stats-cards';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, Clock, CheckCircle2, AlertTriangle, Plus, Activity, ArrowUpRight, Zap, Building2, Briefcase } from 'lucide-react';
-import Link from 'next/link';
+import { StatsCards } from '@/components/admin/stats-cards';
+import { Building2, Plus, Clock, CheckCircle2, AlertTriangle, Activity, Database, Trophy, Trash2, ArrowUpRight } from 'lucide-react';
+import { fetchDashboardDataAction } from './actions';
+import { WipeDataButton } from './wipe-data-button';
 
-export default function AdminDashboardPage() {
-  const mockMetrics = {
-    totalUsers: 12480,
-    activeBusinesses: 12400,
-    publishedNews: 342,
-    upcomingEvents: 86,
-    activeJobs: 5200,
-    marketplaceItems: 1420,
-    activeProperties: 840,
-    reportedContent: 4,
-  };
+export default async function AdminDashboardPage() {
+  const { metrics, staffPerformance, recentActivities } = await fetchDashboardDataAction();
 
-  const pendingApprovals = [
-    { id: '1', module: 'Business', title: 'Malabar Culinary Hub Restaurant', location: 'Mavoor Road', submitted: '2 hours ago', status: 'Pending Verification' },
-    { id: '2', module: 'Cyberpark Jobs', title: 'Lead Fullstack Architect at TechSolutions', location: 'Cyberpark Phase 2', submitted: '4 hours ago', status: 'Pending Verification' },
-    { id: '3', module: 'Real Estate', title: 'Luxury 3BHK Penthouse Villa', location: 'Kozhikode Beach Front', submitted: '6 hours ago', status: 'Pending Verification' },
-  ];
-
-  const recentActivities = [
-    { time: '10 mins ago', action: 'New User Registered', detail: 'Faisal K. registered citizen profile in Spatial Ward 14' },
-    { time: '25 mins ago', action: 'Listing Verified', detail: 'Paragon Restaurant physical ward check verified by Moderator' },
-    { time: '1 hour ago', action: 'Cyberpark Job Posted', detail: 'Senior React Developer posted by Techpark Solutions' },
-    { time: '3 hours ago', action: 'System Backup Complete', detail: 'Automated database snapshot generated in 24ms' },
+  const realMetrics = [
+    { label: 'Ecosystem Citizens', value: metrics.totalUsers.toString(), change: '+Active', trend: 'up' as const },
+    { label: 'Verified Commercial Outlets', value: metrics.activeBusinesses.toString(), change: 'Live', trend: 'up' as const },
+    { label: 'Techpark Jobs Open', value: metrics.publishedJobs.toString(), change: 'Live', trend: 'up' as const },
+    { label: 'Real Estate Listings', value: metrics.properties.toString(), change: 'Live', trend: 'up' as const },
   ];
 
   return (
@@ -54,6 +41,8 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              <WipeDataButton />
+              
               <Link href="/admin/businesses">
                 <button className="h-[40px] px-4 rounded-xl bg-white border border-[#E5E7EB] hover:border-[#2563EB] text-[#111827] text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
                   <Building2 className="w-4 h-4 text-[#2563EB]" /> Add Outlet
@@ -68,46 +57,53 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* SaaS High-Impact Metrics Grid */}
-          <StatsCards metrics={mockMetrics} />
+          <StatsCards metrics={realMetrics} />
 
           {/* Two-Column Grid: Approval Queue & Live Activity */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left Column: Moderation Approval Queue */}
+            {/* Left Column: Field Performance Leaderboard */}
             <div className="lg:col-span-8 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-extrabold text-[#111827] flex items-center gap-2 font-sans">
-                  <Clock className="w-5 h-5 text-amber-500" />
-                  <span>Pending Moderation Queue</span>
+                  <Trophy className="w-5 h-5 text-amber-500" />
+                  <span>Marketing Staff Leaderboard</span>
                 </h3>
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
-                  {pendingApprovals.length} Actions Required
-                </span>
               </div>
 
               <div className="space-y-3">
-                {pendingApprovals.map((item) => (
-                  <Card key={item.id} className="p-5 border border-[#E5E7EB] bg-white rounded-2xl shadow-xs flex flex-wrap items-center justify-between gap-4 hover:border-blue-200 transition-all">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] text-[#2563EB] border-blue-200 bg-blue-50 uppercase font-bold">
-                          {item.module}
-                        </Badge>
-                        <span className="text-xs text-[#6B7280]">• {item.location}</span>
-                        <span className="text-xs text-[#9CA3AF]">({item.submitted})</span>
-                      </div>
-                      <h4 className="text-base font-bold text-[#111827] font-sans">{item.title}</h4>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1 shadow-xs">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Approve
-                      </button>
-                      <button className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold transition-all flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5" /> Reject
-                      </button>
-                    </div>
+                {staffPerformance.length === 0 ? (
+                  <Card className="p-5 border border-[#E5E7EB] bg-white rounded-2xl shadow-xs text-center text-sm text-[#6B7280]">
+                    No marketing staff data available.
                   </Card>
-                ))}
+                ) : (
+                  staffPerformance.map((staff, index) => (
+                    <Card key={staff.id} className="p-5 border border-[#E5E7EB] bg-white rounded-2xl shadow-xs flex items-center justify-between hover:border-blue-200 transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                          #{index + 1}
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-[#111827]">{staff.name}</h4>
+                          <p className="text-xs text-[#6B7280]">Marketing Executive</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6 text-right">
+                        <div>
+                          <p className="text-xs text-[#6B7280]">Businesses</p>
+                          <p className="font-bold text-[#111827]">{staff.businesses}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#6B7280]">Properties</p>
+                          <p className="font-bold text-[#111827]">{staff.properties}</p>
+                        </div>
+                        <div className="bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
+                          <p className="text-xs font-bold text-emerald-700">Total</p>
+                          <p className="font-extrabold text-emerald-700 text-lg">{staff.total}</p>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                )}
               </div>
             </div>
 

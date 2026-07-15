@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { fetchAdminBusinessesAction } from './actions';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Store, ShieldCheck, Star, Search, Plus, Filter, CheckCircle2, XCircle } from 'lucide-react';
@@ -11,25 +12,57 @@ export default function AdminBusinessesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const [outlets, setOutlets] = useState([
-    { id: '1', name: 'Paragon Restaurant', category: 'Dining & Malabar Cuisine', location: 'Mavoor Road Junction', status: 'verified', featured: true, physicalCheck: true },
-    { id: '2', name: 'Aster MIMS Hospital', category: 'Healthcare & Multispecialty', location: 'Govindapuram', status: 'verified', featured: true, physicalCheck: true },
-    { id: '3', name: 'Malabar Culinary Hub', category: 'Dining & Sweets', location: 'SM Street Mittai Theruvu', status: 'pending', featured: false, physicalCheck: false },
-    { id: '4', name: 'Cyberpark Tech Studios', category: 'IT Software Solutions', location: 'Cyberpark Phase 1', status: 'verified', featured: false, physicalCheck: true },
-    { id: '5', name: 'Jayalakshmi Silks', category: 'Textiles & Bridal Wear', location: 'Kallai Road, Palayam', status: 'verified', featured: true, physicalCheck: true },
-  ]);
+  const [outlets, setOutlets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleFeatured = (id: string) => {
-    setOutlets(outlets.map((o) => (o.id === id ? { ...o, featured: !o.featured } : o)));
+  useEffect(() => {
+    loadBusinesses();
+  }, []);
+
+  const loadBusinesses = async () => {
+    setLoading(true);
+    const res = await fetchAdminBusinessesAction();
+    if (res.success) {
+      setOutlets(res.data || []);
+    }
+    setLoading(false);
   };
 
-  const updateStatus = (id: string, newStatus: string) => {
-    setOutlets(outlets.map((o) => (o.id === id ? { ...o, status: newStatus, physicalCheck: newStatus === 'verified' } : o)));
+  const toggleFeatured = async (id: string, currentFeatured: boolean) => {
+    const action = currentFeatured ? 'unfeature' : 'feature';
+    const res = await fetch('/api/v1/admin/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'business', entityId: id, action })
+    });
+    if (res.ok) loadBusinesses();
+  };
+
+  const updateStatus = async (id: string, newStatus: string) => {
+    const action = newStatus === 'verified' ? 'approve' : 'reject';
+    const res = await fetch('/api/v1/admin/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'business', entityId: id, action })
+    });
+    if (res.ok) loadBusinesses();
+  };
+
+  const deleteBusiness = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this business?')) return;
+    const res = await fetch('/api/v1/admin/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'business', entityId: id, hardDelete: true })
+    });
+    if (res.ok) loadBusinesses();
   };
 
   const filteredOutlets = outlets.filter((o) => {
-    const matchesSearch = o.name.toLowerCase().includes(search.toLowerCase()) || o.location.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || o.status === statusFilter;
+    const matchesSearch = o.name?.toLowerCase().includes(search.toLowerCase()) || '';
+    const statusMap: any = { 'verified': 'active', 'pending': 'pending', 'rejected': 'rejected' };
+    const mappedFilter = statusFilter === 'All' ? 'All' : statusMap[statusFilter];
+    const matchesStatus = mappedFilter === 'All' || o.status === mappedFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -98,17 +131,25 @@ export default function AdminBusinessesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB] text-xs">
-                  {filteredOutlets.map((o) => (
+                  {loading ? (
+                    <tr><td colSpan={5} className="text-center py-8">Loading businesses...</td></tr>
+                  ) : filteredOutlets.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-8">No businesses found</td></tr>
+                  ) : filteredOutlets.map((o) => (
                     <tr key={o.id} className="hover:bg-[#F8FAFC] transition-colors">
                       <td className="py-4 px-6 font-semibold">
                         <p className="font-bold text-[#111827] font-sans">{o.name}</p>
-                        <p className="text-[11px] text-[#6B7280]">{o.category}</p>
+                        <p className="text-[11px] text-[#6B7280]">{o.business_categories?.name || 'Uncategorized'}</p>
                       </td>
-                      <td className="py-4 px-4 text-[#4B5563] font-medium">{o.location}</td>
+                      <td className="py-4 px-4 text-[#4B5563] font-medium">{o.areas?.name || o.address || 'Location pending'}</td>
                       <td className="py-4 px-4">
-                        {o.status === 'verified' ? (
+                        {o.status === 'active' ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold">
                             <ShieldCheck className="w-3.5 h-3.5" /> 100% Ward Verified
+                          </span>
+                        ) : o.status === 'rejected' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[11px] font-bold">
+                            Rejected
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold">
@@ -118,15 +159,15 @@ export default function AdminBusinessesPage() {
                       </td>
                       <td className="py-4 px-4">
                         <button
-                          onClick={() => toggleFeatured(o.id)}
+                          onClick={() => toggleFeatured(o.id, o.is_featured)}
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition-all border ${
-                            o.featured
+                            o.is_featured
                               ? 'bg-blue-50 border-blue-200 text-[#2563EB]'
                               : 'bg-slate-50 border-[#E5E7EB] text-[#6B7280] hover:text-[#111827]'
                           }`}
                         >
-                          <Star className={`w-3.5 h-3.5 ${o.featured ? 'fill-[#2563EB]' : ''}`} />
-                          <span>{o.featured ? 'Featured Store' : 'Standard Listing'}</span>
+                          <Star className={`w-3.5 h-3.5 ${o.is_featured ? 'fill-[#2563EB]' : ''}`} />
+                          <span>{o.is_featured ? 'Featured Store' : 'Standard Listing'}</span>
                         </button>
                       </td>
                       <td className="py-4 px-6 text-right space-x-2">
@@ -135,16 +176,22 @@ export default function AdminBusinessesPage() {
                             onClick={() => updateStatus(o.id, 'verified')}
                             className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all inline-flex items-center gap-1"
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Approve & Verify
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Approve
                           </button>
                         ) : (
                           <button
                             onClick={() => updateStatus(o.id, 'pending')}
                             className="px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#6B7280] text-xs font-bold transition-all"
                           >
-                            Revoke Badge
+                            Revoke
                           </button>
                         )}
+                        <button
+                          onClick={() => deleteBusiness(o.id)}
+                          className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all inline-flex items-center gap-1 ml-2"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> Delete
+                        </button>
                       </td>
                     </tr>
                   ))}

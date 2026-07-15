@@ -1,25 +1,52 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
+import { fetchAdminMarketplaceAction } from './actions';
 import { Card } from '@/components/ui/card';
-import { ShoppingBag, Search, CheckCircle2, AlertTriangle, Tag } from 'lucide-react';
+import { ShoppingBag, Search, ShieldCheck, Tag, XCircle } from 'lucide-react';
 
 export default function AdminMarketplacePage() {
   const [search, setSearch] = useState('');
 
-  const [items, setItems] = useState([
-    { id: '1', title: 'Apple iPhone 14 Pro Max 256GB', price: '₹72,000', seller: 'Rahul V.', category: 'Electronics & Mobiles', status: 'approved' },
-    { id: '2', title: 'Yamaha FZ-S V3 2022 Model', price: '₹85,000', seller: 'Vipin Das', category: 'Bikes & Vehicles', status: 'pending' },
-    { id: '3', title: 'Solid Teak Wood Dining Set 6-Seater', price: '₹34,000', seller: 'Latha K.', category: 'Furniture & Home', status: 'approved' },
-  ]);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleStatus = (id: string) => {
-    setItems(items.map((it) => (it.id === id ? { ...it, status: it.status === 'approved' ? 'flagged' : 'approved' } : it)));
+  useEffect(() => {
+    loadItems();
+  }, []);
+
+  const loadItems = async () => {
+    setLoading(true);
+    const res = await fetchAdminMarketplaceAction();
+    if (res.success) {
+      setItems(res.data || []);
+    }
+    setLoading(false);
   };
 
-  const filteredItems = items.filter((it) => it.title.toLowerCase().includes(search.toLowerCase()) || it.seller.toLowerCase().includes(search.toLowerCase()));
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    const action = currentStatus === 'active' ? 'reject' : 'approve';
+    const res = await fetch('/api/v1/admin/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'marketplace', entityId: id, action })
+    });
+    if (res.ok) loadItems();
+  };
+
+  const deleteItem = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this listing?')) return;
+    const res = await fetch('/api/v1/admin/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'marketplace', entityId: id, hardDelete: true })
+    });
+    if (res.ok) loadItems();
+  };
+
+  const filteredItems = items.filter((it) => it.title?.toLowerCase().includes(search.toLowerCase()) || it.seller_profiles?.full_name?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] text-[#111827]">
@@ -68,20 +95,24 @@ export default function AdminMarketplacePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB] text-xs">
-                  {filteredItems.map((it) => (
+                  {loading ? (
+                    <tr><td colSpan={5} className="text-center py-8">Loading listings...</td></tr>
+                  ) : filteredItems.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-8">No listings found</td></tr>
+                  ) : filteredItems.map((it) => (
                     <tr key={it.id} className="hover:bg-[#F8FAFC] transition-colors">
                       <td className="py-4 px-6 font-semibold">
                         <p className="font-bold text-[#111827] font-sans">{it.title}</p>
                         <p className="text-[11px] text-[#6B7280] flex items-center gap-1">
-                          <Tag className="w-3 h-3 text-[#2563EB]" /> {it.category}
+                          <Tag className="w-3 h-3 text-[#2563EB]" /> {it.marketplace_categories?.name || 'Uncategorized'}
                         </p>
                       </td>
-                      <td className="py-4 px-4 font-black text-[#111827]">{it.price}</td>
-                      <td className="py-4 px-4 text-[#4B5563] font-medium">{it.seller}</td>
+                      <td className="py-4 px-4 font-black text-[#111827]">₹{Number(it.price).toLocaleString('en-IN')}</td>
+                      <td className="py-4 px-4 text-[#4B5563] font-medium">{it.seller_profiles?.full_name || 'Anonymous User'}</td>
                       <td className="py-4 px-4">
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                            it.status === 'approved'
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase ${
+                            it.status === 'active'
                               ? 'bg-emerald-100 text-emerald-700'
                               : it.status === 'pending'
                               ? 'bg-amber-100 text-amber-800'
@@ -91,16 +122,22 @@ export default function AdminMarketplacePage() {
                           {it.status}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-right">
+                      <td className="py-4 px-6 text-right space-x-2">
                         <button
-                          onClick={() => toggleStatus(it.id)}
+                          onClick={() => toggleStatus(it.id, it.status)}
                           className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                            it.status === 'approved'
+                            it.status === 'active'
                               ? 'border-rose-200 text-rose-600 bg-rose-50 hover:bg-rose-100'
                               : 'border-emerald-200 text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
                           }`}
                         >
-                          {it.status === 'approved' ? 'Flag & Take Down' : 'Approve Item'}
+                          {it.status === 'active' ? 'Flag & Take Down' : 'Approve Item'}
+                        </button>
+                        <button
+                          onClick={() => deleteItem(it.id)}
+                          className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all inline-flex items-center gap-1"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> Delete
                         </button>
                       </td>
                     </tr>

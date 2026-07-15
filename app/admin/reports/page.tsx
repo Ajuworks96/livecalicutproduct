@@ -1,19 +1,43 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { Card } from '@/components/ui/card';
-import { Flag, CheckCircle2, Trash2, ShieldAlert } from 'lucide-react';
+import { Flag, CheckCircle2, Trash2, ShieldAlert, XCircle } from 'lucide-react';
+import { fetchAdminReportsAction } from './actions';
 
 export default function AdminReportsPage() {
-  const [reports, setReports] = useState([
-    { id: '1', itemType: 'Review', title: 'Inaccurate rating on Zamorin Heritage Resort', reporter: 'Citizen #402', reason: 'Spam / Off-topic content', status: 'Pending' },
-    { id: '2', itemType: 'Classifieds Item', title: 'Suspicious motor bike listing price', reporter: 'Citizen #108', reason: 'Unverified seller details', status: 'Pending' },
-  ]);
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const dismissReport = (id: string) => {
+  useEffect(() => {
+    loadReports();
+  }, []);
+
+  const loadReports = async () => {
+    setLoading(true);
+    const res = await fetchAdminReportsAction();
+    if (res.success) {
+      setReports(res.data || []);
+    }
+    setLoading(false);
+  };
+
+  const dismissReport = async (id: string) => {
+    // Ideally call an API to update report resolution_status to 'dismissed'
+    // For now we'll just update UI to filter it
     setReports(reports.filter((r) => r.id !== id));
+  };
+
+  const deleteReport = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this report?')) return;
+    const res = await fetch('/api/v1/admin/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType: 'report', entityId: id, hardDelete: true })
+    });
+    if (res.ok) loadReports();
   };
 
   return (
@@ -32,18 +56,21 @@ export default function AdminReportsPage() {
           </div>
 
           <div className="space-y-4">
-            {reports.map((rep) => (
+            {loading ? (
+              <p className="text-center py-8 text-sm text-[#6B7280]">Loading reports...</p>
+            ) : reports.map((rep) => (
               <Card key={rep.id} className="p-6 border border-rose-200 bg-white rounded-3xl shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="px-3 py-1 rounded-full bg-rose-100 text-rose-700 text-xs font-bold uppercase tracking-wider">
-                    {rep.itemType} Flag
+                    {rep.entity_type} Flag
                   </span>
-                  <span className="text-xs text-[#6B7280]">Reported by {rep.reporter}</span>
+                  <span className="text-xs text-[#6B7280]">Reported by {rep.reporter?.full_name || 'Anonymous User'}</span>
                 </div>
 
                 <div className="space-y-1">
-                  <h4 className="text-base font-bold text-[#111827] font-sans">{rep.title}</h4>
+                  <h4 className="text-base font-bold text-[#111827] font-sans">Entity ID: {rep.entity_id}</h4>
                   <p className="text-xs font-medium text-rose-600">Reason: {rep.reason}</p>
+                  <p className="text-xs text-[#4B5563]">Details: {rep.details || 'No additional details provided.'}</p>
                 </div>
 
                 <div className="pt-2 flex justify-end gap-2">
@@ -54,16 +81,16 @@ export default function AdminReportsPage() {
                     <CheckCircle2 className="w-4 h-4" /> Approve & Dismiss Flag
                   </button>
                   <button
-                    onClick={() => dismissReport(rep.id)}
+                    onClick={() => deleteReport(rep.id)}
                     className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all flex items-center gap-1.5"
                   >
-                    <Trash2 className="w-4 h-4" /> Delete Content
+                    <XCircle className="w-4 h-4" /> Delete Report
                   </button>
                 </div>
               </Card>
             ))}
 
-            {reports.length === 0 && (
+            {!loading && reports.length === 0 && (
               <Card className="p-12 text-center space-y-3 border border-[#E5E7EB] bg-white rounded-3xl">
                 <ShieldAlert className="w-10 h-10 text-emerald-600 mx-auto" />
                 <h3 className="text-lg font-bold text-[#111827]">Zero Pending Moderation Flags</h3>

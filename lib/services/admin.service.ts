@@ -59,10 +59,13 @@ export class AdminService {
     const updatePayload: Record<string, unknown> = {};
 
     if (action === 'assign_role' && roleId) {
-      // Upsert into user_roles linking table
+      // Delete existing roles for the user to assign a fresh one
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      
+      // Insert new role
       const { error: roleError } = await supabase
         .from('user_roles')
-        .upsert({ user_id: userId, role_id: roleId }, { onConflict: 'user_id' });
+        .insert({ user_id: userId, role_id: roleId });
         
       if (roleError) throw roleError;
       
@@ -124,9 +127,21 @@ export class AdminService {
     if (!tableName) throw new Error(`Unknown entity type: ${entityType}`);
 
     const updatePayload: Record<string, unknown> = {};
-    if (action === 'approve') updatePayload.status = 'active';
+    if (action === 'approve') {
+      if (['job', 'property', 'news', 'event'].includes(entityType)) {
+        updatePayload.status = 'published';
+      } else {
+        updatePayload.status = 'active';
+      }
+    }
     if (action === 'reject') {
-      updatePayload.status = 'rejected';
+      if (entityType === 'job') updatePayload.status = 'closed';
+      else if (entityType === 'property') updatePayload.status = 'draft';
+      else if (['marketplace', 'news', 'event'].includes(entityType)) {
+        updatePayload.status = 'archived';
+      }
+      else updatePayload.status = 'rejected';
+      
       if (rejectionReason) updatePayload.rejection_reason = rejectionReason;
     }
     if (action === 'feature') updatePayload.is_featured = true;
@@ -146,6 +161,39 @@ export class AdminService {
     });
 
     return data;
+  }
+
+  static async deleteEntity(
+    supabase: SupabaseClient,
+    adminId: string,
+    entityType: string,
+    entityId: string,
+    hardDelete: boolean = false
+  ) {
+    const tableMap: Record<string, string> = {
+      business: 'businesses',
+      job: 'jobs',
+      marketplace: 'marketplace_items',
+      property: 'properties',
+      news: 'news',
+      event: 'events',
+      report: 'reports',
+    };
+
+    const tableName = tableMap[entityType];
+    if (!tableName) throw new Error(`Unknown entity type: ${entityType}`);
+
+    if (hardDelete) {
+      const { error } = await supabase.from(tableName).delete().eq('id', entityId);
+      if (error) throw error;
+    } else {
+      // Soft delete
+      const { error } = await supabase.from(tableName).update({ deleted_at: new Date().toISOString() }).eq('id', entityId);
+      if (error) throw error;
+    }
+
+    await this.logAuditAction(supabase, adminId, `entity_delete`, entityType, entityId, { hardDelete });
+    return { success: true };
   }
 
   static async getDashboardMetrics(supabase: SupabaseClient) {
@@ -192,5 +240,41 @@ export class AdminService {
       return [];
     }
     return data ?? [];
+  }
+
+  static async getStaffPerformance(supabase: SupabaseClient) {
+    // 1. Fetch Marketing Executives
+    const { data: roles } = await supabase.from('roles').select('id').eq('name', 'Marketing Executive').single();
+    if (!roles) return [];
+
+    const { data: userRoles } = await supabase.from('user_roles').select('user_id').eq('role_id', roles.id);
+    if (!userRoles || userRoles.length === 0) return [];
+    
+    const staffIds = userRoles.map(ur => ur.user_id);
+
+    // 2. Fetch Profiles for these staff
+    const { data: profiles } = await supabase.from('profiles').select('id, full_name, email').in('id', staffIds);
+    if (!profiles) return [];
+
+    // 3. For each staff, count how many businesses they onboarded
+    const performance = await Promise.all(profiles.map(async (staff) => {
+      const { count: businessCount } = await supabase.from('businesses')
+        .select('*', { count: 'exact', head: true })
+        .eq('created_by', staff.id);
+        
+      const { count: propertiesCount } = await supabase.from('properties')
+        .select('*', { count: 'exact', head: true })
+        .eq('created_by', staff.id);
+        
+      return {
+        id: staff.id,
+        name: staff.full_name || staff.email,
+        businesses: businessCount || 0,
+        properties: propertiesCount || 0,
+        total: (businessCount || 0) + (propertiesCount || 0)
+      };
+    }));
+
+    return performance.sort((a, b) => b.total - a.total);
   }
 }
