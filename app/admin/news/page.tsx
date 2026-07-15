@@ -5,13 +5,22 @@ import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { fetchAdminNewsAction } from './actions';
 import { Card } from '@/components/ui/card';
-import { Newspaper, Plus, Search, Trash2, Edit3, Newspaper as NewsIcon, XCircle } from 'lucide-react';
+import { Newspaper, Plus, Search, XCircle, X, Loader2 } from 'lucide-react';
+import { toast } from '@/lib/toast';
 
 export default function AdminNewsPage() {
   const [search, setSearch] = useState('');
-
   const [newsArticles, setNewsArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Write Article Modal
+  const [showModal, setShowModal] = useState(false);
+  const [formTitle, setFormTitle] = useState('');
+  const [formSummary, setFormSummary] = useState('');
+  const [formContent, setFormContent] = useState('');
+  const [formCategory, setFormCategory] = useState('News Editorial');
+  const [formAuthor, setFormAuthor] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadNews();
@@ -24,6 +33,45 @@ export default function AdminNewsPage() {
       setNewsArticles(res.data || []);
     }
     setLoading(false);
+  };
+
+  const handlePublishArticle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formTitle || !formContent) {
+      toast.error('Validation', 'Title and article body are required.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/news', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formTitle,
+          summary: formSummary,
+          content: formContent,
+          category: formCategory,
+          author: formAuthor,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to publish');
+
+      toast.success('Published!', `"${formTitle}" is now live on the city feed.`);
+      setShowModal(false);
+      setFormTitle('');
+      setFormSummary('');
+      setFormContent('');
+      setFormCategory('News Editorial');
+      setFormAuthor('');
+      loadNews();
+    } catch (err: any) {
+      toast.error('Publish Failed', err.message || 'Could not publish article.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const toggleStatus = async (id: string, currentStatus: string) => {
@@ -65,7 +113,10 @@ export default function AdminNewsPage() {
               <p className="text-sm text-[#6B7280]">Publish civic announcements, manage local breaking news, and curate editorial features</p>
             </div>
 
-            <button className="h-[40px] px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => setShowModal(true)}
+              className="h-[40px] px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0"
+            >
               <Plus className="w-4 h-4" /> Write New Article
             </button>
           </div>
@@ -79,7 +130,7 @@ export default function AdminNewsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search headline..."
-                className="w-full pl-10 pr-4 h-[38px] rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] text-xs text-[#111827] focus:bg-white focus:border-[#2563EB] focus:outline-none"
+                className="w-full pl-10 pr-4 h-[38px] rounded-xl border border-[#D1D5DB] bg-white text-xs text-[#111827] font-semibold focus:border-[#2563EB] focus:outline-none placeholder:text-[#9CA3AF]"
               />
             </div>
             <span className="text-xs font-bold text-[#6B7280]">Articles: {filteredNews.length}</span>
@@ -100,18 +151,26 @@ export default function AdminNewsPage() {
                 </thead>
                 <tbody className="divide-y divide-[#E5E7EB] text-xs">
                   {loading ? (
-                    <tr><td colSpan={5} className="text-center py-8">Loading news...</td></tr>
+                    <tr><td colSpan={5} className="text-center py-8 text-[#6B7280]">Loading news...</td></tr>
                   ) : filteredNews.length === 0 ? (
-                    <tr><td colSpan={5} className="text-center py-8">No articles found</td></tr>
+                    <tr>
+                      <td colSpan={5} className="text-center py-12">
+                        <div className="space-y-2">
+                          <Newspaper className="w-10 h-10 text-[#D1D5DB] mx-auto" />
+                          <p className="text-[#6B7280] font-semibold text-sm">No articles published yet</p>
+                          <p className="text-[#9CA3AF] text-xs">Click "Write New Article" to publish the first city news update.</p>
+                        </div>
+                      </td>
+                    </tr>
                   ) : filteredNews.map((n) => (
                     <tr key={n.id} className="hover:bg-[#F8FAFC] transition-colors">
                       <td className="py-4 px-6 font-semibold">
                         <p className="font-bold text-[#111827] font-sans">{n.title}</p>
-                        <p className="text-[11px] text-[#6B7280]">{n.news_categories?.name || 'Uncategorized'}</p>
+                        <p className="text-[11px] text-[#6B7280]">{n.news_categories?.name || 'General'}</p>
                       </td>
-                      <td className="py-4 px-4 text-[#4B5563] font-medium">{n.profiles?.full_name || n.author || 'System'}</td>
+                      <td className="py-4 px-4 text-[#4B5563] font-medium">{n.profiles?.full_name || n.author || 'Editorial Team'}</td>
                       <td className="py-4 px-4 text-[#6B7280] font-medium">
-                        {new Date(n.published_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                        {new Date(n.published_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td className="py-4 px-4">
                         <span
@@ -148,6 +207,114 @@ export default function AdminNewsPage() {
           </Card>
         </main>
       </div>
+
+      {/* Modal: Write New Article */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 bg-white rounded-3xl shadow-2xl space-y-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-extrabold text-[#111827] flex items-center gap-2">
+                <Newspaper className="w-5 h-5 text-[#2563EB]" /> Write & Publish Article
+              </h2>
+              <button onClick={() => setShowModal(false)} className="text-[#6B7280] hover:bg-[#F3F4F6] p-1.5 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-[#2563EB] font-semibold">
+              📡 Once published, this article immediately appears in the "Today in Kozhikode" section on the homepage.
+            </div>
+
+            <form onSubmit={handlePublishArticle} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#4B5563] uppercase tracking-wider">Article Headline *</label>
+                <input
+                  type="text"
+                  required
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                  placeholder="e.g. Kozhikode Smart City Project Phase 3 Launched"
+                  className="w-full h-11 px-3 rounded-xl border border-[#D1D5DB] bg-white text-sm text-[#111827] font-semibold focus:outline-none focus:border-[#2563EB] placeholder:text-[#9CA3AF]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-[#4B5563] uppercase tracking-wider">Category</label>
+                  <select
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value)}
+                    className="w-full h-11 px-3 rounded-xl border border-[#D1D5DB] bg-white text-sm text-[#111827] font-semibold focus:outline-none focus:border-[#2563EB]"
+                  >
+                    <option value="News Editorial">News Editorial</option>
+                    <option value="Cyberpark Expansion">Cyberpark Expansion</option>
+                    <option value="Cultural Festival">Cultural Festival</option>
+                    <option value="Infrastructure">Infrastructure</option>
+                    <option value="Business">Business</option>
+                    <option value="Government">Government</option>
+                    <option value="Health">Health</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-[#4B5563] uppercase tracking-wider">Author Name</label>
+                  <input
+                    type="text"
+                    value={formAuthor}
+                    onChange={(e) => setFormAuthor(e.target.value)}
+                    placeholder="e.g. LiveCalicut Editorial"
+                    className="w-full h-11 px-3 rounded-xl border border-[#D1D5DB] bg-white text-sm text-[#111827] font-semibold focus:outline-none focus:border-[#2563EB] placeholder:text-[#9CA3AF]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#4B5563] uppercase tracking-wider">Short Summary (shown in timeline)</label>
+                <input
+                  type="text"
+                  value={formSummary}
+                  onChange={(e) => setFormSummary(e.target.value)}
+                  placeholder="One-line summary that appears below the headline in the homepage feed..."
+                  className="w-full h-11 px-3 rounded-xl border border-[#D1D5DB] bg-white text-sm text-[#111827] font-semibold focus:outline-none focus:border-[#2563EB] placeholder:text-[#9CA3AF]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#4B5563] uppercase tracking-wider">Full Article Content *</label>
+                <textarea
+                  required
+                  rows={8}
+                  value={formContent}
+                  onChange={(e) => setFormContent(e.target.value)}
+                  placeholder="Write the full article body here. Include all details, quotes, and context..."
+                  className="w-full px-3 py-3 rounded-xl border border-[#D1D5DB] bg-white text-sm text-[#111827] font-semibold focus:outline-none focus:border-[#2563EB] placeholder:text-[#9CA3AF] resize-none"
+                />
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-[#E5E7EB]">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-5 py-2.5 text-sm font-bold text-[#4B5563] hover:bg-[#F3F4F6] rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2.5 text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl disabled:opacity-50 inline-flex items-center gap-2"
+                >
+                  {submitting ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Publishing...</>
+                  ) : (
+                    <><Newspaper className="w-4 h-4" /> Publish to City Feed</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
