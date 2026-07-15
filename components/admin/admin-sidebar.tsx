@@ -23,6 +23,7 @@ import {
   CreditCard,
   BarChart3,
   LayoutTemplate,
+  Compass,
 } from 'lucide-react';
 
 interface NavItem {
@@ -65,11 +66,12 @@ export const AdminSidebar: React.FC = () => {
     },
     {
       group: 'CITY CONTENT & MEDIA',
-      allowedRoles: ['Super Admin', 'City Admin', 'Moderator'],
+      allowedRoles: ['Super Admin', 'City Admin', 'Moderator', 'Marketing Executive'],
       items: [
         { label: 'Landing Page CMS', href: '/admin/cms', icon: LayoutTemplate, allowedRoles: ['Super Admin', 'City Admin'] },
         { label: 'News & Editorial', href: '/admin/news', icon: Newspaper, allowedRoles: ['Super Admin', 'City Admin', 'Moderator'] },
         { label: 'Cultural Events', href: '/admin/events', icon: Calendar, allowedRoles: ['Super Admin', 'City Admin', 'Moderator'] },
+        { label: 'Tourism & Places', href: '/admin/tourism', icon: Compass, allowedRoles: ['Super Admin', 'City Admin', 'Marketing Executive', 'Moderator'] },
         { label: 'Categories Taxonomy', href: '/admin/categories', icon: FolderTree, allowedRoles: ['Super Admin', 'City Admin'] },
         { label: 'Cities & Wards', href: '/admin/cities', icon: MapPin, allowedRoles: ['Super Admin', 'City Admin'] },
       ],
