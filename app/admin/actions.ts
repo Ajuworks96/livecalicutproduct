@@ -5,7 +5,7 @@ import { requireRole } from '@/lib/supabase/require-auth';
 import { AdminService } from '@/lib/services/admin.service';
 
 export async function fetchDashboardDataAction() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const metrics = await AdminService.getDashboardMetrics(supabase);
   const staffPerformance = await AdminService.getStaffPerformance(supabase);
   const auditLogs = await AdminService.getAuditLogs(supabase);
@@ -20,13 +20,11 @@ export async function fetchDashboardDataAction() {
 }
 
 export async function wipeDummyDataAction() {
-  const supabase = createClient();
-  
-  // Only Super Admins can wipe data
-  const { data: userRoles } = await supabase.from('user_roles').select('roles(name)').single();
-  const isAdmin = userRoles?.roles?.name === 'Super Admin';
-  if (!isAdmin) return { success: false, error: 'Unauthorized' };
+  const auth = await requireRole(['Super Admin']);
+  if (auth instanceof Response) return { success: false, error: 'Unauthorized' };
 
+  const supabase = await createClient();
+  
   // Hard delete all entities created by the system/dummy seeder
   // Or simply delete items where status != 'active'/'published' and maybe some specific dummy flags.
   // For safety, let's just delete unverified ones, or everything except the admin accounts.

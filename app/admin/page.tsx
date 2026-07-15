@@ -12,13 +12,6 @@ import { WipeDataButton } from './wipe-data-button';
 export default async function AdminDashboardPage() {
   const { metrics, staffPerformance, recentActivities } = await fetchDashboardDataAction();
 
-  const realMetrics = [
-    { label: 'Ecosystem Citizens', value: metrics.totalUsers.toString(), change: '+Active', trend: 'up' as const },
-    { label: 'Verified Commercial Outlets', value: metrics.activeBusinesses.toString(), change: 'Live', trend: 'up' as const },
-    { label: 'Techpark Jobs Open', value: metrics.publishedJobs.toString(), change: 'Live', trend: 'up' as const },
-    { label: 'Real Estate Listings', value: metrics.properties.toString(), change: 'Live', trend: 'up' as const },
-  ];
-
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] text-[#111827]">
       {/* Persistent SaaS Sidebar */}
@@ -57,7 +50,7 @@ export default async function AdminDashboardPage() {
           </div>
 
           {/* SaaS High-Impact Metrics Grid */}
-          <StatsCards metrics={realMetrics} />
+          <StatsCards metrics={metrics} />
 
           {/* Two-Column Grid: Approval Queue & Live Activity */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

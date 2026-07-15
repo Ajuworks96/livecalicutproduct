@@ -221,9 +221,12 @@ export class AdminService {
     return {
       totalUsers: totalUsers ?? 0,
       activeBusinesses: activeBusinesses ?? 0,
-      publishedJobs: publishedJobs ?? 0,
-      marketplaceListings: marketplaceListings ?? 0,
-      properties: properties ?? 0,
+      activeJobs: publishedJobs ?? 0,
+      marketplaceItems: marketplaceListings ?? 0,
+      activeProperties: properties ?? 0,
+      publishedNews: 0,
+      upcomingEvents: 0,
+      reportedContent: 0,
       pendingApprovals: pendingApprovals ?? 0,
     };
   }

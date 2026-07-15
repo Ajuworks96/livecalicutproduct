@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuthStore } from '@/src/store/useAuthStore';
+import { useAuthStore, UserRole } from '@/src/store/useAuthStore';
 import { LiveCalicutLogo } from '@/components/shared/live-calicut-logo';
 import {
   LayoutDashboard,
@@ -25,11 +25,24 @@ import {
   LayoutTemplate,
 } from 'lucide-react';
 
+interface NavItem {
+  label: string;
+  href: string;
+  icon: any;
+  allowedRoles: UserRole[];
+}
+
+interface NavGroup {
+  group: string;
+  allowedRoles: UserRole[];
+  items: NavItem[];
+}
+
 export const AdminSidebar: React.FC = () => {
   const pathname = usePathname();
   const { hasRole, roleName } = useAuthStore();
 
-  const navGroups = [
+  const navGroups: NavGroup[] = [
     {
       group: 'OVERVIEW',
       allowedRoles: ['Super Admin', 'City Admin', 'Moderator'],
