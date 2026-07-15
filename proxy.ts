@@ -101,9 +101,9 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    // Admin routes: Moderator, City Admin, Super Admin
+    // Admin routes: Moderator, City Admin, Super Admin, Marketing Executive
     if (ADMIN_ROUTES.some((r) => pathname.startsWith(r))) {
-      const allowed = ['Moderator', 'City Admin', 'Super Admin'].includes(roleName);
+      const allowed = ['Moderator', 'City Admin', 'Super Admin', 'Marketing Executive'].includes(roleName);
       if (!allowed) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
