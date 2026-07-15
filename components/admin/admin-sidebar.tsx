@@ -57,7 +57,7 @@ export const AdminSidebar: React.FC = () => {
       group: 'ECOSYSTEM MANAGEMENT',
       allowedRoles: ['Super Admin', 'City Admin', 'Marketing Executive', 'Moderator', 'Merchant'],
       items: [
-        { label: 'Users & Roles', href: '/admin/users', icon: Users, allowedRoles: ['Super Admin', 'City Admin', 'Marketing Executive'] },
+        { label: 'Users & Roles', href: '/admin/users', icon: Users, allowedRoles: ['Super Admin', 'City Admin'] },
         { label: 'Commercial Outlets', href: '/admin/businesses', icon: Store, allowedRoles: ['Super Admin', 'City Admin', 'Marketing Executive', 'Moderator'] },
         { label: 'Cyberpark Jobs', href: '/admin/jobs', icon: Briefcase, allowedRoles: ['Super Admin', 'City Admin', 'Marketing Executive', 'Moderator', 'Merchant'] },
         { label: 'Classifieds Market', href: '/admin/marketplace', icon: ShoppingBag, allowedRoles: ['Super Admin', 'City Admin', 'Marketing Executive', 'Moderator', 'Merchant'] },

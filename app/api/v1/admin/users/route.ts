@@ -6,7 +6,7 @@ import { requireRole } from '@/lib/supabase/require-auth';
 
 import { createAdminClient } from '@/lib/supabase/server';
 
-const ADMIN_ROLES = ['City Admin', 'Super Admin', 'Marketing Executive'];
+const ADMIN_ROLES = ['City Admin', 'Super Admin'];
 
 export async function GET(request: Request) {
   try {
