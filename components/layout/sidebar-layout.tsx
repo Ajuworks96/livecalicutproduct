@@ -16,7 +16,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
 
   const sidebarLinks = [
     { href: '/profile', label: 'My Profile', icon: LayoutDashboard },
-    { href: '/unauthorized', label: 'Admin Console', icon: ShieldCheck },
+    { href: '/admin', label: 'Admin Console', icon: ShieldCheck },
   ];
 
   return (
