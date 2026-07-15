@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { MerchantSidebar } from '@/components/merchant/merchant-sidebar';
 import { MerchantHeader } from '@/components/merchant/merchant-header';
 import { Card } from '@/components/ui/card';
@@ -42,9 +43,11 @@ export default function MerchantJobsPage() {
               <p className="text-sm text-[#6B7280]">Manage Cyberpark & local vacancies, review candidate resumes, and schedule candidate interviews</p>
             </div>
 
-            <button className="h-[40px] px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0">
-              <Plus className="w-4 h-4" /> Create Vacancy
-            </button>
+            <Link href="/merchant/jobs/create">
+              <button className="h-[40px] px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0">
+                <Plus className="w-4 h-4" /> Create Vacancy
+              </button>
+            </Link>
           </div>
 
           {/* Pipeline Switch Tabs */}

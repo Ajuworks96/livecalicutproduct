@@ -13,33 +13,12 @@ interface TestimonialsProps {
   testimonials?: Testimonial[];
 }
 
-export const Testimonials: React.FC<TestimonialsProps> = ({ testimonials: customTestimonials }) => {
-  const defaultStories = [
-    {
-      name: 'Dr. Faisal Rahman',
-      role: 'Chief Medical Specialist • Aster MIMS',
-      text: 'LiveCalicut transformed how our hospital connects with citizens during emergency needs. Verified blood donors and ambulance responses are handled seamlessly.',
-      rating: 5,
-    },
-    {
-      name: 'Anjali Nambiar',
-      role: 'Senior Software Architect • Cyberpark IT',
-      text: 'Found my dream lead developer role at Cyberpark within 3 days of listing my profile. LiveCalicut is truly the digital heartbeat of software careers in Calicut.',
-      rating: 5,
-    },
-    {
-      name: 'K. V. Moideenkutty',
-      role: 'Merchant Secretary • Mittai Theruvu SM Street',
-      text: 'Over 200 heritage shops on SM Street receive daily footfall and online queries through the business directory. It gave local store owners an equal voice.',
-      rating: 5,
-    },
-  ];
-
-  const stories = customTestimonials || defaultStories;
+export const Testimonials: React.FC<TestimonialsProps> = ({ testimonials = [] }) => {
+  if (testimonials.length === 0) return null;
 
   return (
     <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {stories.map((story) => (
+      {testimonials.map((story) => (
         <StaggerItem key={story.name}>
           <div className="surface-card p-6 flex flex-col justify-between space-y-4 transition-all duration-300 hover:-translate-y-2 h-full">
             <div className="space-y-3">

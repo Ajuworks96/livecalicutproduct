@@ -9,17 +9,8 @@ interface PartnerLogosProps {
   partners?: Partner[];
 }
 
-export const PartnerLogos: React.FC<PartnerLogosProps> = ({ partners: customPartners }) => {
-  const defaultPartners = [
-    { name: 'Aster MIMS Hospital', role: 'Multispecialty Healthcare' },
-    { name: 'Paragon Restaurant', role: 'Malabar Culinary Icon' },
-    { name: 'Cyberpark Kozhikode', role: 'State Government IT Hub' },
-    { name: 'Jayalakshmi Silks', role: 'Heritage Textiles' },
-    { name: 'Zamorin Heritage Stays', role: 'Coastal Beach Resorts' },
-    { name: 'Mittai Theruvu Merchants Association', role: 'Historic SM Street Commerce' },
-  ];
-
-  const partners = customPartners || defaultPartners;
+export const PartnerLogos: React.FC<PartnerLogosProps> = ({ partners = [] }) => {
+  if (partners.length === 0) return null;
 
   return (
     <div className="space-y-8">

@@ -92,6 +92,8 @@ export const jobsApi = {
     apiFetch(`/api/jobs/${slug}`),
   apply: (slug: string, payload: Record<string, unknown>) =>
     apiFetch('/api/jobs/apply', { method: 'POST', body: JSON.stringify({ slug, ...payload }) }),
+  create: (payload: Record<string, unknown>) =>
+    apiFetch('/api/jobs', { method: 'POST', body: JSON.stringify(payload) }),
 };
 
 // ---- Marketplace ----

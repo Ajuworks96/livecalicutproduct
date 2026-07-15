@@ -37,11 +37,18 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
+import { AdminService } from '@/lib/services/admin.service';
+
 export default async function HomePage() {
   // ── Fetch real data from Supabase (Server Component) ──────────────────────
   const supabase = await createClient();
 
-  const [{ data: featuredBusinesses }, { data: activeJobs }, { data: cmsSettingsRow }] = await Promise.all([
+  const [
+    { data: featuredBusinesses },
+    { data: activeJobs },
+    { data: cmsSettingsRow },
+    realMetricsRaw
+  ] = await Promise.all([
     supabase
       .from('businesses')
       .select('id, slug, name, business_categories(name), areas(name), avg_rating, review_count, phone')
@@ -62,9 +69,49 @@ export default async function HomePage() {
       .select('value')
       .eq('key', 'cms')
       .single(),
+    AdminService.getDashboardMetrics(supabase)
   ]);
 
   const cmsData = cmsSettingsRow?.value || {};
+
+  const realMetrics = [
+    {
+      icon: 'Building2',
+      color: 'text-[#2563EB]',
+      label: 'Verified Outlets',
+      value: `${realMetricsRaw.activeBusinesses}+`,
+      bgColor: 'bg-blue-50',
+      subtext: 'Shops, dining & healthcare across 21 Calicut spatial wards',
+      borderColor: 'border-blue-200'
+    },
+    {
+      icon: 'Briefcase',
+      color: 'text-emerald-600',
+      label: 'Cyberpark IT Jobs',
+      value: `${realMetricsRaw.activeJobs}+`,
+      bgColor: 'bg-emerald-50',
+      subtext: 'Software engineering & corporate hiring positions posted',
+      borderColor: 'border-emerald-200'
+    },
+    {
+      icon: 'Users',
+      color: 'text-purple-600',
+      label: 'Connected Citizens',
+      value: `${realMetricsRaw.totalUsers}`,
+      bgColor: 'bg-purple-50',
+      subtext: 'Registered Kozhikode residents on platform',
+      borderColor: 'border-purple-200'
+    },
+    {
+      icon: 'Building',
+      color: 'text-indigo-600',
+      label: 'Real Estate Listings',
+      value: `${realMetricsRaw.activeProperties}`,
+      bgColor: 'bg-indigo-50',
+      subtext: 'Properties, plots and commercial real estate listed',
+      borderColor: 'border-indigo-200'
+    }
+  ];
 
   // 13 Module Shortcut Navigation Cards
   const quickAccessModules = [
@@ -101,7 +148,7 @@ export default async function HomePage() {
           title="Kozhikode City Operating Metrics"
           subtitle="Real-time data engine powering 21 spatial wards across Calicut"
         />
-        <CityMetrics metrics={cmsData.metrics} />
+        <CityMetrics metrics={realMetrics} />
       </Section>
 
       {/* SECTION 3: VISION & MISSION MANIFESTO */}
@@ -289,7 +336,7 @@ export default async function HomePage() {
           title="Trusted City Partners & Institutions"
           subtitle="Empowering digital transformation across Kozhikode’s leading enterprises"
         />
-        <PartnerLogos partners={cmsData.partners} />
+        <PartnerLogos partners={[]} />
       </Section>
 
       {/* SECTION 11: CITIZEN SUCCESS STORIES */}
@@ -298,7 +345,7 @@ export default async function HomePage() {
           title="Stories from Kozhikode Residents"
           subtitle="Real voices from doctors, software engineers, and heritage merchants"
         />
-        <Testimonials testimonials={cmsData.testimonials} />
+        <Testimonials testimonials={[]} />
       </Section>
 
       {/* SECTION 12: MOBILE COMPANION APP DOWNLOAD */}

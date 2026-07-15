@@ -32,34 +32,73 @@ export async function POST(request: Request) {
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    const role = profile?.role || 'user';
+    const isStaffOrAdmin = ['super_admin', 'marketing_executive'].includes(role);
+
     const body = await request.json();
-    const validated = createMarketplaceItemSchema.parse(body);
+    const { title, category, price, condition, description, images } = body;
+
+    if (!title || !category || !price || !condition) {
+      return NextResponse.json({ success: false, message: 'Missing required fields' }, { status: 400 });
+    }
+
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).substring(2, 6);
+
+    // Resolve Category ID
+    let categoryId: string;
+    const categorySlug = category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const { data: categoryData } = await supabase.from('marketplace_categories').select('id').eq('slug', categorySlug).single();
+    if (categoryData) {
+      categoryId = categoryData.id;
+    } else {
+      const { data: newCat } = await supabase.from('marketplace_categories').insert({ name: category, slug: categorySlug }).select('id').single();
+      categoryId = newCat!.id;
+    }
+
+    const coverImage = images && images.length > 0 ? images[0] : null;
 
     const { data, error } = await supabase
       .from('marketplace_items')
       .insert({
-        seller_id: session.user.id,
-        category_id: validated.categoryId,
-        title: validated.title,
-        slug: validated.slug,
-        description: validated.description,
-        price: validated.price,
-        price_type: validated.priceType,
-        is_negotiable: validated.isNegotiable,
-        condition: validated.condition,
-        brand: validated.brand,
-        cover_image: validated.coverImage,
+        seller_id: isStaffOrAdmin ? null : session.user.id,
+        created_by: session.user.id,
+        category_id: categoryId,
+        title: title,
+        slug: slug,
+        description: description || title,
+        price: price,
+        price_type: 'fixed',
+        is_negotiable: true,
+        condition: condition,
+        cover_image: coverImage,
         status: 'active',
       })
       .select()
       .single();
 
     if (error) throw error;
-    return NextResponse.json({ data }, { status: 201 });
+    
+    // Save images if any
+    if (images && images.length > 0) {
+      const imageInserts = images.map((img: string) => ({
+        item_id: data.id,
+        url: img,
+        created_by: session.user.id
+      }));
+      await supabase.from('marketplace_images').insert(imageInserts);
+    }
+
+    return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return NextResponse.json({ success: false, message: err.message }, { status: 400 });
   }
 }
