@@ -71,7 +71,6 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             className="relative p-2 rounded-xl border border-[#E5E7EB] hover:bg-[#F8FAFC] text-[#6B7280] transition-colors"
           >
             <Bell className="w-4 h-4 text-[#111827]" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#2563EB] animate-pulse" />
           </button>
 
           {/* Notification Popup Drawer */}
@@ -81,18 +80,13 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                 <h4 className="text-xs font-extrabold text-[#111827] uppercase tracking-wider font-sans">
                   System Audit Alerts
                 </h4>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-[#2563EB]">
-                  3 Unread
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                  0 Unread
                 </span>
               </div>
               <div className="space-y-2 text-xs">
-                <div className="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] space-y-1">
-                  <p className="font-bold text-[#111827]">New Merchant Registration</p>
-                  <p className="text-[11px] text-[#6B7280]">Malabar Culinary Hub submitted verification documents.</p>
-                </div>
-                <div className="p-2.5 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB] space-y-1">
-                  <p className="font-bold text-[#111827]">Content Flagged by Citizen</p>
-                  <p className="text-[11px] text-[#6B7280]">Review ID #892 flagged for moderation review.</p>
+                <div className="p-4 text-center text-[#6B7280]">
+                  No new alerts.
                 </div>
               </div>
             </div>
