@@ -228,14 +228,14 @@ export default async function HomePage() {
       </Section>
 
       {/* SECTION 7: FEATURED COMMERCIAL OUTLETS (REAL DATA) */}
-      <Section id="featured-businesses" bgVariant="white">
-        <SectionTitle
-          title="Top Rated Commercial Outlets"
-          subtitle="Premier dining spots, hospitals, textiles, and services in Kozhikode"
-          viewAllHref="/business"
-          viewAllLabel="View All Outlets"
-        />
-        {featuredBusinesses && featuredBusinesses.length > 0 ? (
+      {featuredBusinesses && featuredBusinesses.length > 0 && (
+        <Section id="featured-businesses" bgVariant="white">
+          <SectionTitle
+            title="Top Rated Commercial Outlets"
+            subtitle="Premier dining spots, hospitals, textiles, and services in Kozhikode"
+            viewAllHref="/business"
+            viewAllLabel="View All Outlets"
+          />
           <ResponsiveGrid cols={4}>
             {featuredBusinesses.map((biz: any) => (
               <BusinessCard
@@ -252,25 +252,18 @@ export default async function HomePage() {
               />
             ))}
           </ResponsiveGrid>
-        ) : (
-          <div className="text-center py-16 text-[#6B7280]">
-            <p className="text-sm font-medium">No featured businesses yet.</p>
-            <Link href="/business/create" className="text-[#2563EB] text-sm font-bold hover:underline mt-1 inline-block">
-              List your business →
-            </Link>
-          </div>
-        )}
-      </Section>
+        </Section>
+      )}
 
       {/* SECTION 8: ACTIVE JOBS (REAL DATA) */}
-      <Section id="jobs-section" bgVariant="secondary">
-        <SectionTitle
-          title="Cyberpark & IT Openings"
-          subtitle="Software engineering, tech lead roles, and walk-in interviews"
-          viewAllHref="/jobs"
-          viewAllLabel="View All Jobs"
-        />
-        {activeJobs && activeJobs.length > 0 ? (
+      {activeJobs && activeJobs.length > 0 && (
+        <Section id="jobs-section" bgVariant="secondary">
+          <SectionTitle
+            title="Cyberpark & IT Openings"
+            subtitle="Software engineering, tech lead roles, and walk-in interviews"
+            viewAllHref="/jobs"
+            viewAllLabel="View All Jobs"
+          />
           <ResponsiveGrid cols={3}>
             {activeJobs.map((job: any) => {
               const salaryLabel =
@@ -291,15 +284,8 @@ export default async function HomePage() {
               );
             })}
           </ResponsiveGrid>
-        ) : (
-          <div className="text-center py-16 text-[#6B7280]">
-            <p className="text-sm font-medium">No active jobs posted yet.</p>
-            <Link href="/merchant/jobs" className="text-[#2563EB] text-sm font-bold hover:underline mt-1 inline-block">
-              Post a job vacancy →
-            </Link>
-          </div>
-        )}
-      </Section>
+        </Section>
+      )}
 
       {/* SECTION 9: MERCHANT GROWTH & ECONOMIC IMPACT CTA */}
       <Section id="merchant-growth" bgVariant="white">
