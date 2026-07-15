@@ -3,7 +3,7 @@ import { ApiResponse } from '@/lib/api/response';
 import { AdminService } from '@/lib/services/admin.service';
 import { requireRole } from '@/lib/supabase/require-auth';
 
-const ADMIN_ROLES = ['Moderator', 'City Admin', 'Super Admin'];
+const ADMIN_ROLES = ['Moderator', 'City Admin', 'Super Admin', 'Marketing Executive'];
 
 export async function GET() {
   try {

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireRole } from '@/lib/supabase/require-auth';
 import { AdminService } from '@/lib/services/admin.service';
 
-const ADMIN_ROLES = ['Super Admin', 'City Admin', 'Moderator'];
+const ADMIN_ROLES = ['Super Admin', 'City Admin', 'Moderator', 'Marketing Executive'];
 
 export async function POST(req: Request) {
   try {

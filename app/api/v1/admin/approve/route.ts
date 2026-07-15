@@ -4,7 +4,7 @@ import { AdminService } from '@/lib/services/admin.service';
 import { adminApprovalSchema } from '@/lib/validations/admin';
 import { requireRole } from '@/lib/supabase/require-auth';
 
-const ADMIN_ROLES = ['Moderator', 'City Admin', 'Super Admin'];
+const ADMIN_ROLES = ['Moderator', 'City Admin', 'Super Admin', 'Marketing Executive'];
 
 export async function POST(request: Request) {
   try {
